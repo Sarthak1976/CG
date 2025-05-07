@@ -1,0 +1,278 @@
+#include <GL/glut.h>
+#include <iostream>
+#include <cmath>
+
+int length, xi, yi;
+double polygon[3][3], result[3][3];
+int flag = 0;
+double tx, ty, angle, shx, shy, sx, sy;
+
+
+void multiply(double input[3][3], double trans[3][3], double output[3][3]) {
+    for (int i = 0; i < 3; i++) {
+        double x = input[i][0];
+        double y = input[i][1];
+        output[i][0] = x * trans[0][0] + y * trans[1][0] + trans[2][0];
+        output[i][1] = x * trans[0][1] + y * trans[1][1] + trans[2][1];
+        output[i][2] = 1;
+    }
+}
+
+void initPolygon() {
+    polygon[0][0] = xi;
+    polygon[0][1] = yi;
+    polygon[0][2] = 1;
+
+    polygon[1][0] = xi + length;
+    polygon[1][1] = yi;
+    polygon[1][2] = 1;
+
+    polygon[2][0] = xi + length / 2;
+    polygon[2][1] = yi + (length * sqrt(3) / 2);
+    polygon[2][2] = 1;
+}
+
+void translate() {
+    double T[3][3] = {
+        {1, 0, 0},
+        {0, 1, 0},
+        {tx, ty, 1}
+    };
+    multiply(polygon, T, result);
+}
+
+void rotate() {
+    double rad = angle * M_PI / 180.0;
+    double T1[3][3] = {
+        {1, 0, 0},
+        {0, 1, 0},
+        {-xi, -yi, 1}
+    };
+    double R[3][3] = {
+        {cos(rad), sin(rad), 0},
+        {-sin(rad), cos(rad), 0},
+        {0, 0, 1}
+    };
+    double T2[3][3] = {
+        {1, 0, 0},
+        {0, 1, 0},
+        {xi, yi, 1}
+    };
+    double temp[3][3];
+    multiply(polygon, T1, temp);
+    multiply(temp, R, temp);
+    multiply(temp, T2, result);
+}
+
+void scale() {
+    double T1[3][3] = {
+        {1, 0, 0},
+        {0, 1, 0},
+        {-xi, -yi, 1}
+    };
+    double S[3][3] = {
+        {sx, 0, 0},
+        {0, sy, 0},
+        {0, 0, 1}
+    };
+    double T2[3][3] = {
+        {1, 0, 0},
+        {0, 1, 0},
+        {xi, yi, 1}
+    };
+    double temp[3][3];
+    multiply(polygon, T1, temp);
+    multiply(temp, S, temp);
+    multiply(temp, T2, result);
+}
+
+
+void shearX() {
+    double SH[3][3] = {
+        {1, shx, 0},
+        {0, 1, 0},
+        {0, 0, 1}
+    };
+    multiply(polygon, SH, result);
+}
+
+void shearY() {
+    double SH[3][3] = {
+        {1, 0, 0},
+        {shy, 1, 0},
+        {0, 0, 1}
+    };
+    multiply(polygon, SH, result);
+}
+
+void reflectOrigin() {
+    double R[3][3] = {
+        {-1, 0, 0},
+        {0, -1, 0},
+        {0, 0, 1}
+    };
+    multiply(polygon, R, result);
+}
+
+void reflectXAxis() {
+    double R[3][3] = {
+        {1, 0, 0},
+        {0, -1, 0},
+        {0, 0, 1}
+    };
+    multiply(polygon, R, result);
+}
+
+void reflectYAxis() {
+    double R[3][3] = {
+        {-1, 0, 0},
+        {0, 1, 0},
+        {0, 0, 1}
+    };
+    multiply(polygon, R, result);
+}
+
+void reflectXYLine() {
+    double R[3][3] = {
+        {0, 1, 0},
+        {1, 0, 0},
+        {0, 0, 1}
+    };
+    multiply(polygon, R, result);
+}
+
+void draw(double shape[3][3]) {
+    glBegin(GL_LINE_LOOP);
+    for (int i = 0; i < 3; i++) {
+        glVertex2i((int)shape[i][0], (int)shape[i][1])
+    }
+    glEnd();
+}
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glLoadIdentity();
+    glOrtho(-320, 320, -240, 240, -1, 1);
+
+    // Axes
+    glColor3f(1, 1, 1);
+    glBegin(GL_LINES);
+    glVertex2i(-320, 0); glVertex2i(320, 0);
+    glVertex2i(0, -240); glVertex2i(0, 240);
+    glEnd();
+
+    switch (flag) {
+    case 1:
+        glColor3f(1, 0, 0);
+        draw(polygon);
+        break;
+    case 2:
+        draw(polygon);
+        translate();
+        glColor3f(0, 1, 0);
+        draw(result);
+        break;
+    case 3:
+        draw(polygon);
+        rotate();
+        glColor3f(0, 0, 1);
+        draw(result);
+        break;
+    case 4:
+        draw(polygon);
+        shearX();
+        glColor3f(1, 1, 0);
+        draw(result);
+        break;
+    case 5:
+        draw(polygon);
+        shearY();
+        glColor3f(0, 1, 1);
+        draw(result);
+        break;
+    case 6:
+        draw(polygon);
+        reflectOrigin();
+        glColor3f(1, 0, 1);
+        draw(result);
+        break;
+    case 7:
+        draw(polygon);
+        reflectXAxis();
+        glColor3f(0.8f, 0.5f, 0.2f);
+        draw(result);
+        break;
+    case 8:
+        draw(polygon);
+        reflectYAxis();
+        glColor3f(0.5f, 0.8f, 0.2f);
+        draw(result);
+        break;
+    case 9:
+        draw(polygon);
+        reflectXYLine();
+        glColor3f(0.3f, 0.3f, 0.9f);
+        draw(result);
+        break;
+
+    case 10:
+        draw(polygon);
+        scale();
+        glColor3f(0.9f, 0.3f, 0.5f);
+        draw(result);
+        break;
+    }
+
+    glFlush();
+}
+
+void menu(int option) {
+    flag = option;
+    glutPostRedisplay();
+    if (option == 11)
+        exit(0);
+}
+
+int main(int argc, char **argv) {
+    std::cout << "Enter base X Y: ";
+    std::cin >> xi >> yi;
+    std::cout << "Enter side length: ";
+    std::cin >> length;
+    std::cout << "Enter translation tx ty: ";
+    std::cin >> tx >> ty;
+    std::cout << "Enter angle of rotation (degrees): ";
+    std::cin >> angle;
+    std::cout << "Enter shear factors shx shy: ";
+    std::cin >> shx >> shy;
+        std::cout << "Enter scaling factors sx sy: ";
+    std::cin >> sx >> sy;
+
+
+    initPolygon();
+
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(640, 480);
+    glutInitWindowPosition(100, 100);
+    glutCreateWindow("2D Transformations - Triangle");
+
+    glutDisplayFunc(display);
+
+        glutCreateMenu(menu);
+    glutAddMenuEntry("Original Triangle", 1);
+    glutAddMenuEntry("Translate", 2);
+    glutAddMenuEntry("Rotate", 3);
+    glutAddMenuEntry("Shear X", 4);
+    glutAddMenuEntry("Shear Y", 5);
+    glutAddMenuEntry("Reflect about Origin", 6);
+    glutAddMenuEntry("Reflect about X-Axis", 7);
+    glutAddMenuEntry("Reflect about Y-Axis", 8);
+    glutAddMenuEntry("Reflect about X=Y Line", 9);
+    glutAddMenuEntry("Scale", 10);
+    glutAddMenuEntry("Exit", 11);
+
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+
+    glutMainLoop();
+    return 0;
+}
